@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Остров дележа — игра про деление и остаток</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@600;800&family=Golos+Text:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0b7f86;--panel:#ffffff;--ink:#14123d;--edge:#14123d;--muted:#5b5e88;--soft:#dde2fb;
+  --neg:#2459f2;--pos:#ff7a00;--good:#12a85f;--bad:#ff3d5a;--badbg:#ffe3e8;--yel:#ffd93d;--hl:#fff0a0;--sun:#ffd93d;--hot:#ff3d5a;
+  --negbg:rgba(36,89,242,.12);--posbg:rgba(255,122,0,.15);--under:#d3e1ff;--ground:#b8f0c8;
+  --tube:#e8ecff;--glass:rgba(60,150,255,.22);--ruler:#ffe27a;
+  --display:Unbounded,"Arial Rounded MT Bold","Trebuchet MS",system-ui,sans-serif;
+  --body:"Golos Text",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0d1245;--panel:#171e66;--ink:#f4f5ff;--muted:#aab0e0;--soft:#2f3a96;
+    --neg:#86a6ff;--pos:#ffa243;--good:#1fb872;--bad:#ff6b82;--badbg:rgba(255,107,130,.18);--hl:rgba(255,217,61,.28);
+    --negbg:rgba(134,166,255,.2);--posbg:rgba(255,162,67,.2);--under:#27368f;--ground:#1d6a45;
+    --tube:#2b3790;--glass:rgba(110,180,255,.18);--ruler:#7a6a22;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0d1245;--panel:#171e66;--ink:#f4f5ff;--muted:#aab0e0;--soft:#2f3a96;
+  --neg:#86a6ff;--pos:#ffa243;--good:#1fb872;--bad:#ff6b82;--badbg:rgba(255,107,130,.18);--hl:rgba(255,217,61,.28);
+  --negbg:rgba(134,166,255,.2);--posbg:rgba(255,162,67,.2);--under:#27368f;--ground:#1d6a45;
+  --tube:#2b3790;--glass:rgba(110,180,255,.18);--ruler:#7a6a22;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;color:var(--ink);font:400 17px/1.5 var(--body);-webkit-tap-highlight-color:transparent;
+  background-color:var(--bg);background-repeat:no-repeat;
+  background-image:radial-gradient(circle at 8% 4%,rgba(255,255,255,.16) 0 130px,transparent 131px),radial-gradient(circle at 96% 24%,rgba(255,217,61,.22) 0 100px,transparent 101px),radial-gradient(circle at 4% 70%,rgba(255,95,170,.22) 0 150px,transparent 151px)}
+button{font:inherit;color:inherit}
+:focus-visible{outline:3px solid #fff;outline-offset:2px;box-shadow:0 0 0 6px var(--edge)}
+[hidden]{display:none!important}
+.wrap{max-width:760px;margin:0 auto;padding:20px 16px 56px}
+
+/* кнопки */
+.btn{border:3px solid var(--edge);border-radius:16px;padding:11px 20px;font:800 15px var(--display);background:var(--yel);color:var(--edge);cursor:pointer;box-shadow:0 4px 0 var(--edge)}
+.btn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--edge)}
+.btn.ghost{background:#fff}
+.link{background:none;border:0;color:rgba(255,255,255,.85);text-decoration:underline;cursor:pointer;font-size:15px}
+.back{display:inline-flex;align-items:center;gap:6px;background:#fff;color:var(--edge);border:3px solid var(--edge);border-radius:999px;padding:6px 14px 6px 8px;font:700 15px var(--body);cursor:pointer;box-shadow:0 3px 0 var(--edge)}
+.back svg{width:20px;height:20px;stroke:var(--edge);stroke-width:3;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.back:active{transform:translateY(2px);box-shadow:0 1px 0 var(--edge)}
+
+/* главная */
+.hero{display:flex;flex-wrap:wrap;align-items:center;gap:6px 20px}
+.hero .ht{flex:1 1 300px;min-width:0}
+.hero h1{font:800 clamp(34px,9vw,58px)/1.02 var(--display);color:#fff;margin:0 0 12px;letter-spacing:-.02em}
+.hero p{color:rgba(255,255,255,.94);margin:0 0 16px;max-width:38ch;font-size:18px}
+.isle{flex:0 1 280px;width:280px;max-width:100%;height:auto}
+.pill{display:inline-flex;align-items:center;gap:8px;background:var(--yel);color:var(--edge);border:3px solid var(--edge);border-radius:999px;padding:5px 14px 5px 10px;font:800 14px var(--display);box-shadow:0 3px 0 var(--edge)}
+.pill svg{width:20px;height:20px;fill:#fff;stroke:var(--edge);stroke-width:2}
+h2.sec{display:flex;align-items:center;gap:10px;margin:32px 0 14px;color:#fff;font:800 19px/1.2 var(--display)}
+.badge{flex:none;width:38px;height:38px;border-radius:50%;background:var(--yel);color:var(--edge);border:3px solid var(--edge);display:grid;place-items:center;font:800 22px/1 var(--display)}
+.badge .fr{font-size:12px;margin:0;color:var(--edge)}
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:14px}
+.tile{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:4px;min-height:184px;padding:14px 14px 14px;border:3px solid var(--edge);border-radius:30px 30px 14px 30px;background:var(--c);color:var(--edge);text-align:left;cursor:pointer;box-shadow:0 6px 0 var(--edge)}
+.tile:active{transform:translateY(5px);box-shadow:0 1px 0 var(--edge)}
+.tile .pic{width:72px;height:72px;margin:0 0 6px -4px}
+.tile b{font:800 14px/1.2 var(--display)}
+.tile small{font:600 13px/1.3 var(--body);opacity:.85}
+.tile .prog{margin-top:auto;padding-top:10px;display:flex;align-items:center;gap:5px;width:100%}
+.pip{width:13px;height:13px;border-radius:50%;border:2.5px solid var(--edge)}
+.pip.on{background:var(--edge)}
+.prog .sc{margin-left:auto;font:800 12px var(--display)}
+.tile.lab{grid-column:1/-1;flex-direction:row;align-items:center;gap:16px;min-height:0;padding:14px 18px 14px 12px;border-radius:30px}
+.tile.lab .pic{width:84px;height:84px;margin:0;flex:none}
+.tile.lab b{font-size:18px}
+.tile.lab small{font-size:15px;display:block;margin-top:4px}
+.tile.lab .go{margin-left:auto;flex:none;display:grid;place-items:center;width:44px;height:44px;border-radius:50%;background:var(--yel);border:3px solid var(--edge)}
+.tile.lab .go svg{width:22px;height:22px;stroke:var(--edge);stroke-width:3;fill:none;stroke-linecap:round;stroke-linejoin:round}
+@media (max-width:420px){.tile.lab .go{display:none}}
+footer{margin-top:34px;text-align:center}
+
+/* игра: шапка и панель */
+.bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.bar .ttl{flex:1;min-width:150px;display:flex;align-items:center;gap:10px;color:#fff;font:800 17px/1.15 var(--display)}
+.mini{flex:none;width:46px;height:46px;border-radius:15px;background:var(--c,#fff);border:3px solid var(--edge);display:grid;place-items:center}
+.mini .pic{width:34px;height:34px}
+.dots{display:flex;gap:6px}
+.dot{width:34px;height:34px;border-radius:50%;border:3px solid #fff;background:transparent;color:#fff;font:800 14px var(--display);cursor:pointer;padding:0;display:grid;place-items:center}
+.dot.done{background:var(--yel);color:var(--edge);border-color:var(--edge)}
+.dot.cur{background:#fff;color:var(--edge);border-color:var(--edge)}
+.panel{background:var(--panel);color:var(--ink);border:3px solid var(--edge);border-radius:30px;padding:22px 20px;box-shadow:0 8px 0 var(--edge)}
+@media (max-width:480px){.panel{padding:16px 14px;border-radius:24px}}
+.intro{text-align:center}
+.medal{width:112px;height:112px;margin:0 auto 16px;border-radius:34px;background:var(--c);border:3px solid var(--edge);display:grid;place-items:center;box-shadow:0 5px 0 var(--edge)}
+.medal .pic{width:84px;height:84px}
+.intro p{max-width:44ch;margin:0 auto 22px;font-size:19px}
+.q{font:600 20px/1.45 var(--body);margin:2px 0 16px}
+.q b{font-weight:800;background:var(--hl);border-radius:6px;padding:0 5px}
+#stage{min-height:120px;position:relative}
+.actions{display:flex;gap:10px;justify-content:space-between;margin-top:18px;flex-wrap:wrap}
+.shake{animation:shake .35s}
+@keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.note{margin:10px 0;color:var(--muted);text-align:center;font-size:16px;font-weight:600}
+
+/* ответы учителя */
+.fb{display:none;margin-top:16px;border-radius:18px;padding:12px 16px;font:600 17px/1.4 var(--body)}
+.fb.good{display:flex;align-items:center;gap:14px;background:var(--good);color:#fff;border:3px solid var(--edge);font-weight:800}
+.fb.bad{display:block;background:var(--badbg);border:3px solid var(--bad);color:var(--ink)}
+.fb.info{display:block;color:var(--muted);padding:4px 2px}
+.fb .fr{font-size:1em}
+.stars{flex:none;display:inline-flex}
+.st{display:block;animation:starpop .5s both cubic-bezier(.2,1.6,.4,1)}
+.st:nth-child(2){animation-delay:.12s}.st:nth-child(3){animation-delay:.24s}
+.st svg{display:block;width:30px;height:30px;fill:transparent;stroke:#fff;stroke-width:1.8;stroke-linejoin:round}
+.st.on svg{fill:var(--yel);stroke:var(--edge)}
+@keyframes starpop{from{transform:scale(0) rotate(-40deg)}to{transform:scale(1) rotate(0)}}
+.finale{text-align:center;padding:8px 0}
+.stars.big .st svg{width:60px;height:60px;stroke:var(--edge);fill:var(--yel)}
+.fin{font:800 24px var(--display);margin-top:8px}
+
+/* варианты ответа */
+.choices{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin:16px 0}
+.chip{min-width:78px;padding:9px 16px;border:3px solid var(--edge);border-radius:16px;background:#fff;color:var(--edge);font:800 22px/1.2 var(--display);cursor:pointer;box-shadow:0 4px 0 var(--edge)}
+.chip:active{transform:translateY(3px);box-shadow:0 1px 0 var(--edge)}
+.chip.ok{background:var(--good);color:#fff}
+.chip.no{background:var(--bad);color:#fff;opacity:.85}
+.chip:disabled{cursor:default}
+.fr{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;line-height:1.1;margin:0 3px;font:800 .9em var(--display);text-decoration:none}
+.fr b{padding:0 4px;background:none;font-weight:800}
+.fr b:first-child{border-bottom:2.5px solid currentColor}
+.chip .fr{font-size:.8em}.q .fr{font-size:.85em}.duo .fr{font-size:1em}
+
+/* лифт */
+.bld{position:relative;width:min(100%,360px);margin:0 auto;border:3px solid var(--ink);border-radius:16px;overflow:hidden;background:var(--panel)}
+.floor{display:flex;align-items:center;gap:10px;width:100%;height:44px;border:0;border-bottom:2px solid var(--soft);padding:0 12px;background-color:transparent;color:var(--ink);cursor:pointer;text-align:left}
+.floor .fn{font:800 17px var(--display);width:46px}
+.floor .ft{font-size:14px;font-weight:600;color:var(--muted)}
+.floor.above .fn{color:var(--pos)}
+.floor.under{background-color:var(--under)}
+.floor.under .fn{color:var(--neg)}
+.floor.ground{background-color:var(--ground);border-bottom:4px solid var(--ink)}
+.floor:hover{filter:brightness(.94)}
+.car{position:absolute;left:120px;top:0;width:60px;height:44px;display:grid;place-items:center;transition:transform .7s cubic-bezier(.5,0,.2,1);pointer-events:none}
+.cabin{position:relative;width:46px;height:34px;border:3px solid var(--edge);border-radius:8px;background:var(--yel)}
+.cabin::after{content:"";position:absolute;left:50%;top:0;bottom:0;width:3px;margin-left:-1.5px;background:var(--edge)}
+
+/* монеты и долги */
+.row{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;min-height:70px;margin:8px 0;align-items:center}
+.rowlabel{color:var(--muted);text-align:center;font-size:15px;font-weight:600}
+.tok{width:64px;height:64px;display:grid;place-items:center;font:800 19px/1 var(--display);cursor:pointer;padding:0;border:3px solid var(--edge)}
+.tok.coin{border-radius:50%;background:var(--yel);color:var(--edge);box-shadow:inset 0 0 0 5px var(--yel),inset 0 0 0 7px rgba(20,18,61,.3)}
+.tok.debt{border-radius:12px;background:#2459f2;color:#fff;transform:rotate(-3deg)}
+.tok.sel{box-shadow:0 0 0 4px var(--panel),0 0 0 8px var(--pos)}
+.tok.pop{animation:pop .35s forwards}
+@keyframes pop{to{transform:scale(0);opacity:0}}
+.bal{font:800 54px/1.1 var(--display);text-align:center}
+.bal.neg{color:var(--neg)}.bal.pos{color:var(--pos)}
+
+/* градусник */
+.thermo{display:flex;justify-content:center;align-items:flex-start;margin:0 auto;width:min(100%,300px)}
+.tubewrap{display:flex;flex-direction:column;align-items:center;width:46px}
+.tube{position:relative;width:26px;background:var(--tube);border:3px solid var(--ink);border-bottom:0;border-radius:13px 13px 0 0;overflow:hidden}
+.mer{position:absolute;left:0;right:0;bottom:0;transition:height .4s,background .3s}
+.bulb{width:44px;height:44px;border-radius:50%;border:3px solid var(--ink);margin-top:-6px;transition:background .3s;background:var(--neg)}
+.trows{flex:1}
+.tick{display:flex;align-items:center;gap:8px;width:100%;height:22px;border:0;background:none;padding:0;cursor:pointer;color:var(--ink);font:700 14px var(--body);text-align:left}
+.tick i{display:block;width:14px;height:3px;background:var(--ink);opacity:.5;border-radius:2px}
+.tick.zero{background:var(--hl);font-weight:800}
+.tick.zero i{width:26px;opacity:1}
+.tick:hover{background:var(--negbg)}
+.cards2{display:flex;gap:16px;justify-content:center;flex-wrap:wrap}
+.tcard{display:flex;flex-direction:column;align-items:center;gap:4px;background:#fff;color:var(--edge);border:3px solid var(--edge);border-radius:18px;padding:10px 22px;cursor:pointer;font:800 22px/1.2 var(--display);box-shadow:0 4px 0 var(--edge)}
+.tcard svg{display:block}
+.tcard.ok{background:var(--good);color:#fff}
+.tcard.no{background:var(--bad);color:#fff;opacity:.8}
+.sortrow{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;min-height:46px;margin-bottom:6px}
+.sorted{background:var(--good);color:#fff;border:3px solid var(--edge);border-radius:12px;padding:3px 10px;font:800 17px var(--display)}
+
+/* числовая прямая */
+.nl{width:100%;height:auto;display:block;touch-action:manipulation;cursor:pointer}
+.nl text{font-family:var(--body);font-weight:700}
+
+/* море */
+.sea{position:relative;border:3px solid var(--ink);border-radius:18px;width:min(100%,400px);margin:0 auto;overflow:hidden;background:#bfeaff}
+.sea .sky{position:absolute;left:0;right:0;top:0;height:50%;background:linear-gradient(#7fd3ff,#d6f2ff)}
+.sea .water{position:absolute;left:0;right:0;bottom:0;height:50%;background-color:#2d7bff;background-image:repeating-linear-gradient(180deg,transparent 0 14px,rgba(255,255,255,.16) 14px 16px),linear-gradient(#3b95ff,#1d4fd1)}
+.sea .lvl0{position:absolute;left:0;right:0;top:50%;border-top:4px solid #fff}
+.sea .lvl0 span{position:absolute;right:8px;top:4px;font:700 13px var(--body);color:#fff}
+.sea .mk{position:absolute;left:8px;font:800 11px var(--display);color:#fff}
+.sea .mk.up{color:var(--edge)}
+.sitem{position:absolute;display:flex;align-items:center;gap:6px;transition:top .8s ease-in-out}
+.se{display:block;line-height:0}
+.ic *{fill:#fff;stroke:#14123d;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.ic .a{fill:#ffd93d}.ic .b{fill:#ff8a3d}
+.stag{background:#fff;color:var(--edge);border:2px solid var(--edge);border-radius:8px;padding:0 7px;font:800 12px/1.6 var(--display);white-space:nowrap}
+
+/* доска */
+.chiprow{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:12px}
+.dice{font:800 20px/1.2 var(--display);padding:6px 14px;border:3px solid var(--edge);border-radius:12px;color:#fff}
+.dice.plus{background:#ff7a00}.dice.minus{background:#2459f2}
+.board{display:flex;width:100%;border:3px solid var(--ink);border-radius:14px;overflow:hidden;background:#fff}
+.cell{flex:1;min-width:0;height:78px;border:0;border-right:2px solid #dde2fb;padding:4px 0;display:flex;flex-direction:column;justify-content:space-between;align-items:center;cursor:pointer;color:var(--edge);background-color:#fff}
+.cell:last-child{border-right:0}
+.cell.neg{background-color:#d3e1ff}
+.cell.zero{background-color:#ffe98a}
+.cell .cn{font:800 11px var(--display)}
+.cell .pc{display:flex;flex-direction:column;gap:3px}
+.pawn{display:block;width:15px;height:15px;border-radius:50%;background:#ff7a00;border:2.5px solid var(--edge)}
+.pawn.bot{border-radius:3px;background:#2459f2}
+.bigdice{text-align:center;margin:10px 0;min-height:44px}
+
+/* дроби */
+.pizza{display:block;margin:0 auto;max-width:100%;height:auto;cursor:pointer}
+.duo{display:flex;gap:18px;justify-content:center;flex-wrap:wrap;align-items:flex-start}
+.duo figure{margin:0;text-align:center;font-size:15px;font-weight:600;color:var(--muted)}
+.choc{display:grid;gap:4px;margin:0 auto;padding:6px;background:#4a2a14;border:3px solid var(--edge);border-radius:14px}
+.piece{aspect-ratio:1;border:0;border-radius:5px;cursor:pointer;background:#7a4524;box-shadow:inset 0 0 0 2px rgba(255,255,255,.12),inset 0 -4px 0 rgba(0,0,0,.25);color:#fff;font:800 18px var(--display);padding:0}
+.piece.alt{background:#8c5230}
+.piece.sel{background:#ff7a00}
+.piece.c1{background:#12a85f}.piece.c2{background:#2459f2}.piece.c3{background:#6c6c8a}
+.sw{display:inline-block;width:14px;height:14px;border-radius:4px;vertical-align:-2px;margin-right:4px}
+.sw.c1{background:#12a85f}.sw.c2{background:#2459f2}
+
+/* стакан и линейка */
+.cup{display:block;margin:0 auto;width:min(100%,230px);height:auto}
+.cup text{font-family:var(--body);font-size:16px;font-weight:800}
+.rul{width:100%;height:auto;display:block}
+.rul text{font-family:var(--body);font-size:22px;font-weight:800}
+.slide{width:min(100%,360px);display:block;margin:10px auto;accent-color:var(--neg);height:32px}
+
+/* музыка */
+.mbar{display:flex;height:64px;border:3px solid var(--ink);border-radius:14px;overflow:hidden;background:repeating-linear-gradient(45deg,transparent 0 8px,var(--soft) 8px 10px)}
+.seg{display:grid;place-items:center;color:#fff;font:800 22px var(--display);border-right:3px solid var(--panel);min-width:0;overflow:hidden}
+.seg.empty{background:none;border:0}
+.pal{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:14px 0}
+.pal .chip{font:800 13px var(--display);min-width:0;padding:10px 12px}
+
+/* лаборатория */
+.cols{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;align-items:start;margin-top:8px}
+.col{background:var(--panel);border:3px solid var(--ink);border-radius:18px;padding:8px 6px;text-align:center}
+.col h3{margin:0 0 8px;font:800 12px var(--display)}
+.lrow{position:relative;height:22px;display:flex;align-items:center;justify-content:center;font:800 11px var(--display)}
+.lrow.neg{background:var(--negbg)}.lrow.pos{background:var(--posbg)}.lrow.zero{background:var(--hl)}
+.lrow.on{background:var(--ink);color:var(--panel)}
+.lcar{position:absolute;left:50%;top:0;width:30px;height:22px;margin-left:-15px;transition:transform .35s;display:grid;place-items:center}
+.lcar::after{content:"";width:22px;height:16px;border:3px solid var(--edge);border-radius:4px;background:var(--yel)}
+.ltube{position:relative;margin:0 auto;width:26px;background:var(--tube);border:3px solid var(--ink);border-bottom:0;border-radius:13px 13px 0 0;overflow:hidden}
+.lbulb{width:36px;height:36px;border-radius:50%;border:3px solid var(--ink);margin:-4px auto 0}
+.pile{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;align-content:flex-start;min-height:240px}
+.pile .tok{width:38px;height:38px;font-size:12px;cursor:default;box-shadow:none;border-width:2.5px}
+.labrange{width:100%;accent-color:var(--neg);height:34px;margin:10px 0 4px}
+.facts{list-style:none;padding:0;margin:12px 0;display:grid;gap:6px}
+.facts li{padding:3px 0 3px 12px;border-left:4px solid var(--yel)}
+h3.sub{font:800 15px var(--display);margin:18px 0 4px}
+.big-n{font:800 64px/1 var(--display);text-align:center}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+
+.btn:disabled,.back:disabled{opacity:.5;cursor:not-allowed}
+.dot:disabled{opacity:.45;cursor:not-allowed}
+#stage.locked{opacity:.45;filter:grayscale(.5);pointer-events:none}
+.wait{margin-top:10px;font-weight:700;font-size:15px}
+.wbar{display:block;height:8px;margin-top:6px;border-radius:99px;background:rgba(20,18,61,.12);overflow:hidden}
+.wbar i{display:block;height:100%;width:100%;background:var(--bad);transition:width .3s linear}
+.chip.small{font-size:15px;min-width:0;padding:8px 12px;line-height:1.3}
+.scalebox{max-width:360px;margin:0 auto}.scale{width:100%;height:auto;display:block}
+.pan{display:flex;flex-wrap:wrap;gap:8px 6px;justify-content:center;min-height:52px;padding:6px 4px 14px}
+.wt,.bl{position:relative;width:40px;height:40px;display:grid;place-items:center;font:800 12px var(--display);padding:0;border:3px solid var(--edge);color:#fff}
+.wt{border-radius:8px;background:#14123d}
+.bl{border-radius:50% 50% 50% 50%/58% 58% 42% 42%;background:#2459f2}
+.bl::after{content:"";position:absolute;left:50%;top:100%;width:2px;height:9px;background:var(--ink);margin-left:-1px}
+.pan button.wt,.pan button.bl{cursor:pointer}
+.pan button:disabled{cursor:default;opacity:1}
+.scoreb{background:#14123d;color:#fff;border-radius:18px;padding:12px 16px;text-align:center;max-width:340px;margin:0 auto}
+.scoreb .sn{font:800 15px var(--display);color:var(--yel)}
+.sbig{display:flex;justify-content:center;align-items:center;gap:14px;font:800 52px/1.1 var(--display)}
+.sbig i{font-style:normal;opacity:.6}
+.sl{display:flex;justify-content:space-around;font-size:13px;opacity:.8}
+.diffbig{text-align:center;font:800 28px var(--display);margin:10px 0}
+.tbl{border-collapse:collapse;margin:0 auto;width:min(100%,380px)}
+.tbl th,.tbl td{padding:8px 10px;border-bottom:2px solid var(--soft);text-align:center}
+.tbl th{font:800 11px var(--display);color:var(--muted)}.tbl td:first-child{text-align:left;font-weight:800}
+.clock{display:block;margin:0 auto;width:min(100%,260px);height:auto;cursor:pointer}
+.strips{display:grid;gap:14px;margin:6px 0}
+.strips figure{margin:0}
+.strips figcaption{margin-top:4px;font-weight:700;font-size:15px;color:var(--muted);display:flex;align-items:center;gap:6px;min-height:34px}
+.strip{display:flex;height:46px;border:3px solid var(--ink);border-radius:12px;overflow:hidden;background:#fff}
+.strip button{flex:1;min-width:0;border:0;border-right:2px solid var(--ink);background:#fff;padding:0;cursor:pointer}
+.strip button:last-child{border-right:0}
+.strip button.on{background:var(--c,#ff7a00)}
+.strip.still button{cursor:default}
+.chip.pick{background:var(--yel);box-shadow:0 4px 0 var(--edge),inset 0 0 0 3px var(--edge)}
+.expr{font:800 34px/1.25 var(--display);text-align:center;margin:12px 0 4px;color:var(--ink)}
+.expr .qm{color:var(--pos)}
+.dgrid{display:grid;grid-template-columns:repeat(var(--cols,10),1fr);gap:3px;width:min(100%,400px);margin:10px auto;padding:5px;border:3px solid var(--ink);border-radius:12px;background:var(--panel)}
+.dcell{aspect-ratio:1;border:0;border-radius:3px;background:var(--soft);cursor:pointer;padding:0}
+.dcell.on{background:var(--pos)}
+.cmp{display:grid;gap:10px;margin:12px 0}
+.cmprow{display:grid;grid-template-columns:72px 1fr;gap:10px;align-items:center;font:800 18px var(--display)}
+.cb{display:block;height:26px;border:3px solid var(--ink);border-radius:10px;overflow:hidden;background:#fff}
+.cb i{display:block;height:100%}
+.lits{display:flex;gap:14px;justify-content:center;align-items:center;flex-wrap:wrap;margin:12px 0}
+.lit{margin:0;display:grid;gap:4px}
+.litrow{display:grid;grid-template-columns:repeat(10,15px);gap:2px;padding:3px;border:3px solid var(--ink);border-radius:8px;background:#fff}
+.litrow i{display:block;height:18px;background:var(--soft);border-radius:2px}
+.litrow i.on{background:#2e8bff}
+.lit figcaption{font:800 15px var(--display);text-align:center}
+.opsign{font:800 30px var(--display)}
+.gviz{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin:12px 0}
+.gbox{display:grid;grid-template-columns:repeat(var(--cols,4),14px);gap:3px;padding:6px;border:3px solid var(--ink);border-radius:10px;background:var(--panel)}
+.gdot{display:block;width:14px;height:14px;border-radius:50%;background:#ff7a00;border:2px solid var(--edge)}
+.gdot.empty{background:transparent;border:2px dashed var(--muted)}
+.gdots{display:flex;flex-wrap:wrap;gap:4px;justify-content:center}
+.pile2{text-align:center;margin:10px 0;min-height:30px}
+.pile2 .pl{display:block;font-weight:800;margin-bottom:6px}
+.plates{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin:12px 0}
+.plate{width:92px;min-height:78px;padding:6px;border:3px solid var(--edge);border-radius:50% 50% 46% 46%/60% 60% 40% 40%;background:#fff;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:var(--edge)}
+.plate .pd{display:flex;flex-wrap:wrap;gap:2px;justify-content:center}
+.plate .pc2{font:800 14px var(--display)}
+.week{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin:12px 0}
+.day{border:3px solid var(--edge);border-radius:12px;background:#fff;color:var(--edge);padding:8px 2px;text-align:center;font:inherit;cursor:pointer}
+div.day{cursor:default}
+.day b{display:block;font:800 14px var(--display)}
+.day small{font-weight:700;color:#5b5e88}
+.day.start{background:var(--yel)}
+.day.res{background:var(--good);color:#fff}.day.res small{color:#fff}
+.beads{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:12px 0}
+.bead{display:flex;flex-direction:column;align-items:center;font-size:12px;font-weight:700;color:var(--muted)}
+.bead i{display:block;width:26px;height:26px;border-radius:50%;border:3px solid var(--edge)}
+.tags{display:grid;gap:8px;margin:10px 0}
+.tag{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.tag b{font:800 20px var(--display);width:44px}
+.hopnote{min-height:24px}
+</style>
+</head>
+<body>
+<noscript>Для игры нужен включённый JavaScript.</noscript>
+
+<!-- ГЛАВНАЯ -->
+<main id="home" class="wrap">
+  <header class="hero">
+    <div class="ht">
+      <h1>Остров дележа</h1>
+      <p>Делим поровну и с остатком — через игры. 9 тем по 4 задания: целочисленное деление и остаток от деления.</p>
+      <div class="pill" id="totalStars"></div>
+    </div>
+    <svg class="isle" viewBox="0 0 320 200" aria-hidden="true"><g stroke="#14123d" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round"><g stroke="#ffd93d" stroke-width="5"><path d="M258 12v8M258 84v8M214 52h8M294 52h8M227 21l6 6M283 77l6 6M289 21l-6 6M233 77l-6 6"/></g><circle cx="258" cy="52" r="25" fill="#ffd93d"/><path d="M34 74a15 15 0 0 1 29-5a13 13 0 0 1 26 4a11 11 0 0 1-2 21H44a12 12 0 0 1-10-20Z" fill="#fff"/><path d="M0 152q20-14 40 0t40 0 40 0 40 0 40 0 40 0 40 0 40 0V200H0Z" fill="#59a6ff"/><path d="M62 166Q72 124 160 120Q248 124 258 166Q160 182 62 166Z" fill="#ffd93d"/><path d="M146 128Q158 92 140 52" fill="none" stroke="#8a4a24" stroke-width="8"/><path d="M140 52Q116 28 92 44Q120 42 140 52Z" fill="#2fcf7a"/><path d="M140 52Q152 22 180 26Q160 34 140 52Z" fill="#2fcf7a"/><path d="M140 52Q170 44 190 62Q162 56 140 52Z" fill="#2fcf7a"/><path d="M140 52Q124 68 104 88Q122 64 140 52Z" fill="#2fcf7a"/><circle cx="144" cy="58" r="5" fill="#8a4a24"/><path d="M206 144V112"/><rect x="190" y="96" width="34" height="22" rx="5" fill="#fff"/></g><text x="207" y="113" text-anchor="middle" font-family="Unbounded,sans-serif" font-weight="800" font-size="15" fill="#ff3d5a">÷</text></svg>
+  </header>
+  <h2 class="sec"><span class="badge">÷</span>Целочисленное деление</h2>
+  <div class="tiles" id="gridNeg"></div>
+  <h2 class="sec"><span class="badge">%</span>Остаток от деления</h2>
+  <div class="tiles" id="gridFrac"></div>
+  <footer><button class="link" id="reset">Сбросить прогресс</button></footer>
+</main>
+
+<!-- ИГРА -->
+<main id="game" class="wrap" hidden>
+  <div class="bar">
+    <button class="back" id="back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>Меню</button>
+    <div class="ttl" id="gTitle"></div>
+    <div class="dots" id="dots"></div>
+  </div>
+  <section id="introCard" class="panel intro" hidden>
+    <div class="medal" id="introEmoji"></div>
+    <p id="introText"></p>
+    <button class="btn" id="go">Поехали!</button>
+  </section>
+  <section id="play" class="panel" hidden>
+    <div class="q" id="q"></div>
+    <div id="stage"></div>
+    <div class="fb" id="fb" role="status" aria-live="polite"></div>
+    <div class="actions">
+      <button class="btn ghost" id="again">↻ Заново</button>
+      <button class="btn" id="next" hidden>Дальше</button>
+    </div>
+  </section>
+</main>
+
+<script>
+'use strict';
+/* ================= помощники ================= */
+const MINUS='\u2212';
+const num=n=>n<0?MINUS+(-n):String(n);
+const sg=n=>n>0?'+'+n:num(n);
+const $=(s,r=document)=>r.querySelector(s);
+const h=(t,c,html)=>{const e=document.createElement(t);if(c)e.className=c;if(html!=null)e.innerHTML=html;return e};
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+const gcd=(a,b)=>b?gcd(b,a%b):Math.abs(a);
+const fr=(n,d)=>`<span class="fr"><b>${n}</b><b>${d}</b></span>`;
+const qtxt=q=>{if(q%4===0)return num(q/4);const g=gcd(q,4);const n=q/g,d=4/g;return (n<0?MINUS:'')+Math.abs(n)+'/'+d};
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const NS='http://www.w3.org/2000/svg';
+
+let save={};
+try{save=JSON.parse(localStorage.getItem('ostrov-dezha')||'{}')||{}}catch(e){save={}}
+const persist=()=>{try{localStorage.setItem('ostrov-dezha',JSON.stringify(save))}catch(e){}};
+
+/* ================= ядро игры ================= */
+const WORLDS=[];
+const views={home:$('#home'),game:$('#game')};
+const show=v=>{TOK++;G.lock=false;stage.classList.remove('locked');stage.removeAttribute('inert');$('#again').disabled=false;for(const k in views)views[k].hidden=k!==v;window.scrollTo({top:0})};
+const fb=$('#fb'),stage=$('#stage'),nextBtn=$('#next');
+let G={w:null,l:0,mist:0,over:false,lock:false};
+let LOCK_SEC=20; /* пауза после неправильного ответа */
+
+let TOK=0; /* номер уровня: отложенные действия старого уровня не должны срабатывать в новом */
+const later=(fn,ms)=>{const t=TOK;setTimeout(()=>{if(t===TOK)fn()},ms)};
+function setLock(on){
+  G.lock=on;stage.classList.toggle('locked',on);
+  if(on)stage.setAttribute('inert','');else stage.removeAttribute('inert');
+  $('#again').disabled=on;renderDots();
+}
+function startLock(){
+  setLock(true);const end=Date.now()+LOCK_SEC*1000,tok=TOK;
+  const tick=()=>{
+    if(tok!==TOK||!G.lock)return;
+    const ms=end-Date.now(),t=$('#waitTxt'),bar=$('#waitBar');
+    if(ms<=0){setLock(false);if(t)t.textContent='Можно пробовать снова.';if(bar)bar.style.width='0%';return}
+    if(t)t.innerHTML=`Прочитай подсказку и подумай. Снова можно через <b>${Math.ceil(ms/1000)}</b> с`;
+    if(bar)bar.style.width=(ms/(LOCK_SEC*1000)*100)+'%';
+    setTimeout(tick,250);
+  };tick();
+}
+const api={
+  get over(){return G.over||G.lock},
+  win(msg){
+    if(G.over)return;G.over=true;
+    const stars=Math.max(1,3-G.mist);
+    const a=save[G.w.id]=save[G.w.id]||[];a[G.l]=Math.max(a[G.l]||0,stars);persist();
+    fb.className='fb good';fb.innerHTML=`<span class="stars" role="img" aria-label="${stars} из 3 звёзд">${starsHtml(stars)}</span><span>${msg}</span>`;
+    nextBtn.hidden=false;nextBtn.textContent=G.l<G.w.levels.length-1?'Дальше':'Закончить мир';
+    renderDots();
+  },
+  miss(msg){
+    if(G.over)return;G.mist++;
+    fb.className='fb bad';fb.innerHTML=`<div>${msg}</div><div class="wait"><span id="waitTxt"></span><span class="wbar"><i id="waitBar"></i></span></div>`;
+    stage.classList.remove('shake');void stage.offsetWidth;stage.classList.add('shake');
+    startLock();
+  },
+  fail(msg){G.over=true;fb.className='fb bad';fb.innerHTML=msg},
+  info(msg){fb.className='fb info';fb.innerHTML=msg}
+};
+
+function renderDots(){
+  const box=$('#dots');box.innerHTML='';
+  G.w.levels.forEach((_,i)=>{
+    const st=(save[G.w.id]||[])[i]||0;
+    const d=h('button','dot'+(st?' done':'')+(i===G.l?' cur':''),String(i+1));d.disabled=G.lock;
+    d.setAttribute('aria-label','Уровень '+(i+1));
+    d.onclick=()=>{G.l=i;startLevel()};box.append(d);
+  });
+}
+function openWorld(w){
+  G.w=w;G.l=0;show('game');
+  $('#gTitle').innerHTML=`<span class="mini" style="--c:${COLORS[w.id]}">${ICONS[w.id]}</span><span>${w.title}</span>`;
+  $('#introEmoji').innerHTML=ICONS[w.id];$('#introEmoji').style.setProperty('--c',COLORS[w.id]);$('#introText').innerHTML=w.intro;
+  $('#introCard').hidden=false;$('#play').hidden=true;renderDots();
+}
+function startLevel(){
+  const lv=G.w.levels[G.l];
+  TOK++;G.mist=0;G.over=false;G.lock=false;stage.classList.remove('locked');stage.removeAttribute('inert');$('#again').disabled=false;
+  $('#introCard').hidden=true;$('#play').hidden=false;
+  $('#q').innerHTML=lv.q;stage.innerHTML='';fb.className='fb';fb.innerHTML='';
+  nextBtn.hidden=true;$('#again').hidden=false;renderDots();
+  lv.run(stage);
+}
+function finish(){
+  const got=(save[G.w.id]||[]).reduce((a,b)=>a+(b||0),0),mx=G.w.levels.length*3;
+  $('#q').innerHTML='Тема пройдена!';stage.innerHTML='';fb.className='fb';
+  stage.append(h('div','finale',`<span class="stars big">${starsHtml(3)}</span><div class="fin">${got} из ${mx} звёзд</div>`));
+  const row=h('div','actions');
+  const a=h('button','btn ghost','Пройти ещё раз');a.onclick=()=>{G.l=0;startLevel()};
+  const b=h('button','btn','К карте миров');b.onclick=goHome;
+  row.append(a,b);stage.append(row);
+  nextBtn.hidden=true;$('#again').hidden=true;
+}
+nextBtn.onclick=()=>{G.l<G.w.levels.length-1?(G.l++,startLevel()):finish()};
+$('#again').onclick=startLevel;
+$('#go').onclick=startLevel;
+$('#back').onclick=goHome;
+
+/* общие элементы */
+function numOpts(ans,wrongs,fmt=sg){
+  const u=[...new Set(wrongs.filter(x=>x!==ans))].slice(0,3);
+  return shuffle([ans,...u]).map(v=>({label:fmt(v),value:v}));
+}
+function choices(st,opts,correct,okMsg,noMsg,onOk){
+  const box=h('div','choices');
+  opts.forEach(o=>{
+    const b=h('button','chip',o.label);
+    b.onclick=()=>{
+      if(api.over||b.disabled)return;
+      if(o.value===correct){b.classList.add('ok');if(onOk)onOk();api.win(okMsg)}
+      else{b.classList.add('no');b.disabled=true;api.miss(typeof noMsg==='function'?noMsg(o):noMsg)}
+    };
+    box.append(b);
+  });
+  st.append(box);return box;
+}
+function checkBtn(st,fn){
+  const d=h('div','choices');const b=h('button','btn','Проверить');
+  b.onclick=()=>{if(!api.over)fn()};d.append(b);st.append(d);
+}
+const world=o=>WORLDS.push(o);
+
+/* ===== общие помощники сайта ===== */
+const sameSet=(set,arr)=>set.size===arr.length&&arr.every(v=>set.has(v));
+const listNums=set=>[...set].sort((a,b)=>a-b).join(', ')||'ничего';
+function multiPick(st,{opts,correct,okMsg,noMsg}){
+  const sel=new Set(),box=h('div','choices');
+  opts.forEach(o=>{
+    const b=h('button','chip',o.label);b.setAttribute('aria-pressed','false');
+    b.onclick=()=>{if(api.over)return;sel.has(o.value)?sel.delete(o.value):sel.add(o.value);b.classList.toggle('pick',sel.has(o.value));b.setAttribute('aria-pressed',String(sel.has(o.value)))};
+    box.append(b);
+  });
+  st.append(box);
+  checkBtn(st,()=>sameSet(sel,correct)?api.win(okMsg):api.miss(typeof noMsg==='function'?noMsg(sel):noMsg));
+}
+const dots=(n,cls='')=>Array.from({length:n},()=>`<i class="gdot ${cls}"></i>`).join('');
+function groupsViz(total,size){
+  const full=Math.floor(total/size),rest=total%size,box=h('div','gviz');
+  for(let i=0;i<full;i++)box.append(h('div','gbox',dots(size)));
+  if(rest)box.append(h('div','gbox',dots(rest)+dots(size-rest,'empty')));
+  box.querySelectorAll('.gbox').forEach(b=>b.style.setProperty('--cols',Math.min(size,7)));
+  return box;
+}
+
+/* ================= ЦЕЛОЧИСЛЕННОЕ ДЕЛЕНИЕ ================= */
+function dealGame(st,{n,k,q,r}){
+  let pile=n;const plates=Array(k).fill(0);
+  const pileEl=h('div','pile2'),row=h('div','plates');
+  const draw=()=>{
+    pileEl.innerHTML=`<span class="pl">В коробке: <b>${pile}</b></span><span class="gdots">${dots(pile)}</span>`;
+    row.innerHTML='';
+    plates.forEach((c,i)=>{
+      const b=h('button','plate',`<span class="pd">${dots(c)}</span><span class="pc2">${c}</span>`);
+      b.setAttribute('aria-label','тарелка '+(i+1));
+      b.onclick=()=>{if(api.over||!pile)return;pile--;plates[i]++;draw()};row.append(b);
+    });
+  };
+  draw();
+  st.append(h('div','note','Нажимай на тарелку — на неё ляжет одно печенье из коробки.'),pileEl,row);
+  const ctl=h('div','choices'),ck=h('button','btn','Проверить'),rs=h('button','btn ghost','Раздать заново');
+  rs.onclick=()=>{if(api.over)return;pile=n;plates.fill(0);draw()};
+  ck.onclick=()=>{
+    if(api.over)return;
+    if(!plates.every(c=>c===plates[0]))return api.miss('Тарелки получились разные. Каждому должно достаться одинаково.');
+    if(plates[0]<q)return api.miss(`По ${plates[0]} на тарелку — можно больше: в коробке ещё ${pile}. Раздавай по кругу, пока хватает на все тарелки.`);
+    api.win(`${n} : ${k} = ${q}${r?`, остаток ${r}`:''}. ${r?`Ещё одну целую «порцию» на ${k} тарелок не собрать, поэтому ${r} остаются в коробке.`:'Всё раздали без остатка.'}`);
+  };
+  ctl.append(ck,rs);st.append(ctl);
+}
+world({id:'div1',title:'Раздаём поровну',sub:'Тарелки и печенье',group:'neg',
+  intro:'Целочисленное деление — это деление на равные части, где считают только <b>целые</b> порции. 14 печений на 4 тарелки: по 3 на каждую, а 2 печенья остаются в коробке. Пишут: 14 : 4 = 3 (остаток 2).',
+  levels:[
+    {q:'Раздай <b>12 печений</b> поровну на <b>4 тарелки</b>. Сколько на каждой?',run(st){dealGame(st,{n:12,k:4,q:3,r:0})}},
+    {q:'Раздай <b>14 печений</b> поровну на 4 тарелки так, чтобы раздать <b>как можно больше</b>. Сколько останется в коробке?',run(st){dealGame(st,{n:14,k:4,q:3,r:2})}},
+    {q:'Раздаём <b>20 печений</b> поровну <b>6 друзьям</b>, только целыми. Сколько получит каждый?',run(st){
+      choices(st,numOpts(3,[4,2,14],String),3,'20 : 6 = 3 (остаток 2): 6 · 3 = 18, а 6 · 4 = 24 — уже больше 20.',o=>`${o.value}? Проверь умножением: сколько будет 6 · ${o.value}? Не больше ли это 20?`);
+    }},
+    {q:'В коробку помещается 6 яиц. Сколько <b>полных</b> коробок получится из 40 яиц?',run(st){
+      choices(st,numOpts(6,[7,4,34],String),6,'40 : 6 = 6 (остаток 4): 6 · 6 = 36, а седьмую коробку не заполнить.',o=>`${o.value}? Проверь: 6 · ${o.value} = ${6*o.value}. Не больше ли это 40? Нужны только полные коробки.`);
+    }}
+  ]});
+function hopGame(st,{n,k}){
+  const q=Math.floor(n/k),W=700,P=26,U=(W-2*P)/n,X=v=>P+v*U;let hops=0;
+  let s=`<svg viewBox="0 0 ${W} 150" class="nl" role="img" aria-label="Числовая прямая от 0 до ${n}"><line x1="12" y1="96" x2="${W-12}" y2="96" style="stroke:var(--ink);stroke-width:4"/>`;
+  for(let v=0;v<=n;v++){const big=v%k===0||v===n;s+=`<line x1="${X(v)}" y1="96" x2="${X(v)}" y2="${96+(big?20:12)}" style="stroke:var(--ink);stroke-width:${big?4:2.5}"/>`;if(big)s+=`<text x="${X(v)}" y="144" text-anchor="middle" font-size="24" font-weight="800" style="fill:${v===n?'var(--hot)':'var(--ink)'}">${v}</text>`}
+  s+=`<g id="hg"></g></svg>`;
+  const box=h('div','',s);st.append(box);const g=$('#hg',box);
+  const note=h('div','note hopnote'),ctl=h('div','choices');
+  const hop=h('button','btn',`Прыжок +${k}`),back=h('button','btn ghost','Назад'),done=h('button','btn','Готово');
+  const draw=()=>{
+    let t='';for(let i=0;i<hops;i++){const a=X(i*k),b=X((i+1)*k);t+=`<path d="M${a} 90Q${(a+b)/2} ${36} ${b} 90" style="fill:none;stroke:var(--pos);stroke-width:4;stroke-linecap:round"/>`}
+    t+=`<circle cx="${X(hops*k)}" cy="96" r="12" style="fill:var(--sun);stroke:var(--ink);stroke-width:3"/>`;g.innerHTML=t;
+    hop.disabled=(hops+1)*k>n;back.disabled=hops===0;
+    note.textContent=hop.disabled?`Следующий прыжок вылетел бы за число ${n}.`:`Прыжков сделано: ${hops}`;
+  };
+  hop.onclick=()=>{if(api.over||hop.disabled)return;hops++;draw()};
+  back.onclick=()=>{if(api.over||back.disabled)return;hops--;draw()};
+  done.onclick=()=>{
+    if(api.over)return;
+    if(hops===q)api.win(`${n} : ${k} = ${q}${n%k?` (остаток ${n%k})`:''}. Число ${k} помещается в ${n} ровно ${q} ${q>=2&&q<=4?'раза':'раз'}.`);
+    else api.miss(`Сделано прыжков: ${hops}. ${hops<q?'Можно прыгнуть ещё, не перелетев число '+n+'.':'Слишком много.'}`);
+  };
+  ctl.append(hop,back,done);st.append(ctl,note);draw();
+}
+const hopLevel=(n,k)=>({q:`Сколько раз по <b>${k}</b> помещается в <b>${n}</b>? Прыгай по прямой шагами по ${k}, пока не перелетишь число ${n}. Потом нажми «Готово».`,run(st){hopGame(st,{n,k})}});
+world({id:'div2',title:'Прыжки по прямой',sub:'Сколько раз помещается',group:'neg',
+  intro:'Делить — значит выяснять, <b>сколько раз</b> одно число помещается в другом. Прыгай по прямой одинаковыми шагами и считай прыжки, пока не перелетишь нужное число. Количество прыжков — это целая часть от деления.',
+  levels:[hopLevel(12,3),hopLevel(15,4),hopLevel(23,5),hopLevel(7,9)]});
+const exprLvl=(q,expr,ans,wr,ok,hint)=>({q,run(st){
+  st.append(h('div','expr',`${expr} <span class="qm">?</span>`));
+  choices(st,numOpts(ans,wr,String),ans,ok,o=>`${o.value}? ${hint}`);
+}});
+world({id:'div3',title:'Проверка умножением',sub:'a = b · q + r',group:'neg',
+  intro:'Деление и умножение связаны: <b>делимое = делитель · частное + остаток</b>. Например, 17 = 5 · 3 + 2. По этой формуле можно проверять себя и искать неизвестные числа.',
+  levels:[
+    exprLvl('Допиши равенство.','17 = 5 · 3 +',2,[3,5,12],'5 · 3 = 15, а до 17 не хватает 2: это остаток.','Посчитай 5 · 3 и посмотри, сколько не хватает до 17.'),
+    {q:'Сколько целых раз 6 помещается в 29? Найди <b>частное</b> от деления 29 на 6.',run(st){
+      choices(st,numOpts(4,[5,6,3],String),4,'6 · 4 = 24, а 6 · 5 = 30 — это уже больше 29. Частное 4, остаток 5.',o=>`${o.value}? Проверь: 6 · ${o.value} = ${6*o.value}. Нужно наибольшее число, при котором результат не больше 29.`);
+    }},
+    {q:'Число разделили на 7: частное 5, остаток 3. Что это за число?',run(st){
+      choices(st,numOpts(38,[35,15,8],String),38,'7 · 5 + 3 = 38.',o=>`${o.value}? Собери число обратно: делитель · частное + остаток = 7 · 5 + 3.`);
+    }},
+    {q:'Числа делят на 4. Какое <b>наибольшее</b> число даёт частное 6 (остаток может быть любым)?',run(st){
+      choices(st,numOpts(27,[24,28,30],String),27,'4 · 6 = 24, остаток может быть 0, 1, 2 или 3, поэтому наибольшее число — 24 + 3 = 27. А 28 = 4 · 7: там частное уже 7.',o=>`${o.value}? Остаток при делении на 4 не больше 3. Прибавь максимальный остаток к 4 · 6.`);
+    }}
+  ]});
+const groupLevel=(q,total,size,ans,wr,ok,hint,legend)=>({q,run(st){
+  st.append(groupsViz(total,size),h('div','note',legend));
+  choices(st,numOpts(ans,wr,String),ans,ok,o=>`${o.value}? ${hint}`);
+}});
+world({id:'div4',title:'Задачи из жизни',sub:'Такси, часы, недели',group:'neg',
+  intro:'В жизни важно понимать, когда нужны только <b>полные</b> группы (сколько полных недель), а когда надо <b>взять ещё одну</b> (сколько такси нужно, чтобы поместились все). Картинка с группами поможет.',
+  levels:[
+    groupLevel('25 детей едут на такси, в каждой машине 4 места. Сколько такси нужно, чтобы поместились <b>все</b>?',25,4,7,[6,5,29],'25 : 4 = 6 (остаток 1). Шесть полных машин, а ещё один ребёнок остался — нужно седьмое такси.','Шесть полных машин — это 24 ребёнка, а ребёнок номер 25 останется на улице.','Каждая рамка — одно такси на 4 места, каждая точка — ребёнок.'),
+    groupLevel('Прошло 100 минут. Сколько <b>полных часов</b> прошло?',10,6,1,[2,6,40],'100 : 60 = 1 (остаток 40). Прошёл один полный час и 40 минут.','Одна рамка — это час (6 точек по 10 минут). Сколько рамок заполнено полностью?','Каждая точка — 10 минут, рамка — полный час.'),
+    groupLevel('Прошло 30 дней. Сколько <b>полных недель</b> прошло?',30,7,4,[5,2,7],'30 : 7 = 4 (остаток 2): четыре полные недели и ещё 2 дня.','Одна рамка — неделя из 7 дней. Считай только полностью заполненные рамки.','Каждая точка — день, рамка — полная неделя.'),
+    groupLevel('У тебя 230 тенге, конфета стоит 50 тенге. Сколько конфет ты <b>можешь купить</b>?',23,5,4,[5,46,3],'230 : 50 = 4 (остаток 30): на четыре конфеты хватает, а на пятую не хватает 20 тенге.','Одна рамка — 50 тенге (5 монет по 10 тенге) — одна конфета. Считай полные рамки.','Каждая точка — монета в 10 тенге, рамка — цена одной конфеты.')
+  ]});
+
+/* ================= ОСТАТОК ОТ ДЕЛЕНИЯ ================= */
+function groupMaker(st,{n,k}){
+  let pile=n,groups=0,asked=false;
+  const boxes=h('div','gviz'),pileEl=h('div','pile2'),btn=h('button','btn',`Собрать группу по ${k}`),note=h('div','note');
+  const r=n%k;
+  const draw=()=>{
+    pileEl.innerHTML=`<span class="gdots">${dots(pile)}</span>`;boxes.innerHTML='';
+    for(let i=0;i<groups;i++){const b=h('div','gbox',dots(k));b.style.setProperty('--cols',Math.min(k,7));boxes.append(b)}
+    btn.disabled=pile<k;note.textContent=groups?`Собрано групп: ${groups}`:'Групп пока нет';
+    if(pile<k&&!asked){
+      asked=true;st.append(h('div','note',`Больше группу по ${k} не собрать. Сколько точек осталось?`));
+      choices(st,numOpts(r,[r+1,r+3,k].map(x=>x%1000),String),r,`${n} = ${k} · ${groups} + ${r}. Остаток ${r}: он всегда меньше размера группы (${k}).`,o=>`${o.value}? Посчитай точки, которые лежат вне групп.`);
+    }
+  };
+  btn.onclick=()=>{if(api.over||btn.disabled)return;pile-=k;groups++;draw()};
+  const ctl=h('div','choices');ctl.append(btn);st.append(pileEl,ctl,boxes,note);draw();
+}
+world({id:'rem1',title:'Лишние остались',sub:'Что осталось',group:'frac',
+  intro:'Остаток — это то, что <b>не вошло</b> в полные группы. Из 17 точек получится 3 группы по 5, и останется 2 точки. Остаток всегда <b>меньше</b> размера группы: иначе можно было бы собрать ещё одну.',
+  levels:[
+    {q:'Собери из <b>17 точек</b> группы по 5. Нажимай «Собрать группу», пока можно. Сколько точек осталось?',run(st){groupMaker(st,{n:17,k:5})}},
+    {q:'Собери из <b>20 точек</b> группы по 6. Что останется?',run(st){groupMaker(st,{n:20,k:6})}},
+    {q:'Собери из <b>9 точек</b> группы по 3. Что останется?',run(st){groupMaker(st,{n:9,k:3})}},
+    {q:'Собери из <b>5 точек</b> группы по 7. Что останется?',run(st){groupMaker(st,{n:5,k:7})}}
+  ]});
+function dial(st,pick){
+  let hr=0;const box=h('div','');st.append(box);
+  const C=110,pt=(a,r)=>[C+r*Math.sin(a*Math.PI/180),C-r*Math.cos(a*Math.PI/180)];
+  const render=()=>{
+    let s=`<svg viewBox="0 0 220 220" class="clock" role="img" aria-label="Циферблат"><circle cx="110" cy="110" r="102" style="fill:#ffd93d;stroke:#14123d;stroke-width:4"/><circle cx="110" cy="110" r="92" style="fill:#fff"/>`;
+    for(let n=1;n<=12;n++){const [x,y]=pt(n*30,74);s+=`<text x="${x}" y="${y+7}" text-anchor="middle" style="font:800 20px Unbounded,sans-serif;fill:#14123d">${n}</text>`}
+    if(hr){const [x,y]=pt(hr*30,54);s+=`<line x1="110" y1="110" x2="${x}" y2="${y}" style="stroke:#ff7a00;stroke-width:8;stroke-linecap:round"/><circle cx="${x}" cy="${y}" r="7" style="fill:#ff7a00;stroke:#14123d;stroke-width:3"/>`}
+    box.innerHTML=s+`<circle cx="110" cy="110" r="7" style="fill:#14123d"/></svg>`;
+  };
+  const set=v=>{hr=v;render()};render();
+  if(pick)box.addEventListener('click',e=>{
+    if(api.over)return;const svg=$('svg',box),r=svg.getBoundingClientRect();
+    const x=(e.clientX-r.left)/r.width*220-110,y=(e.clientY-r.top)/r.height*220-110;
+    let a=Math.atan2(x,-y)*180/Math.PI;if(a<0)a+=360;const v=Math.round(a/30)%12||12;set(v);pick(v);
+  });else $('svg',box).style.cursor='default';
+  return {set};
+}
+const dialLevel=(q,start,ans,wr,ok,hint)=>({q,run(st){
+  const d=dial(st,null);d.set(start);
+  choices(st,numOpts(ans,wr,String),ans,ok,o=>`${o.value}? ${hint}`,()=>d.set(ans));
+}});
+world({id:'rem2',title:'Часы по кругу',sub:'Остаток от деления на 12',group:'frac',
+  intro:'Часы ходят по кругу: после 12 снова 1. Поэтому время считают по <b>остатку от деления на 12</b>. Через 5 часов после 10 часов будет 3: 10 + 5 = 15, а 15 − 12 = 3.',
+  levels:[
+    dialLevel('Сейчас <b>10 часов</b>. Сколько часов покажет циферблат через <b>5 часов</b>?',10,3,[15,5,1],'10 + 5 = 15, а на циферблате только до 12: 15 − 12 = 3. Это остаток от деления 15 на 12.','Сложи 10 + 5, а потом «убери» полный круг в 12 часов.'),
+    dialLevel('Сейчас <b>9 часов</b>. Что будет на циферблате через <b>5 часов</b>?',9,2,[14,4,5],'9 + 5 = 14, 14 − 12 = 2. Остаток от деления 14 на 12 равен 2.','Сложи 9 + 5 и вычти полный круг (12).'),
+    dialLevel('Сейчас <b>5 часов</b>. Что будет на циферблате через <b>100 часов</b>?',5,9,[105,4,8],'100 = 8 · 12 + 4: восемь полных кругов вернут стрелку на место, остаётся ещё 4 часа. 5 + 4 = 9.','Полные круги по 12 часов не меняют время. Сколько часов останется после 8 полных кругов?'),
+    {q:'Сейчас <b>7 часов</b>. Нажми на циферблате, где окажется стрелка через <b>20 часов</b>.',run(st){
+      const d=dial(st,v=>{v===3?api.win('7 + 20 = 27, 27 = 2 · 12 + 3: два полных круга и ещё 3 часа. Стрелка на 3.'):api.miss(`Ты выбрал ${v}. 7 + 20 = 27. Сколько останется после двух полных кругов по 12?`)});d.set(7);
+    }}
+  ]});
+const DS=['Пн','Вт','Ср','Чт','Пт','Сб','Вс'],DN=['Понедельник','Вторник','Среда','Четверг','Пятница','Суббота','Воскресенье'];
+function week(st,{start,pick}){
+  const row=h('div','week'),cells=DS.map((d,i)=>{
+    const b=h(pick?'button':'div','day'+(i===start?' start':''),`<b>${d}</b><small>${i}</small>`);
+    if(pick)b.onclick=()=>{if(!api.over)pick(i)};row.append(b);return b;
+  });
+  st.append(row);return {mark:i=>cells[i].classList.add('res')};
+}
+const dayOpts=(c,w)=>shuffle([c,...w]).map(i=>({label:DN[i],value:i}));
+const weekLevel=(q,start,plus,wr,ok,hint)=>({q,run(st){
+  const w=week(st,{start}),ans=(start+plus)%7;
+  choices(st,dayOpts(ans,wr),ans,ok,o=>`${DN[o.value]}? ${hint}`,()=>w.mark(ans));
+}});
+world({id:'rem3',title:'Дни недели',sub:'Остаток от деления на 7',group:'frac',
+  intro:'Дни недели тоже ходят по кругу, но по 7. Чтобы узнать день через много дней, нужен только <b>остаток от деления на 7</b>: целые недели возвращают нас в тот же день. Под днями подписаны номера 0–6.',
+  levels:[
+    weekLevel('Сегодня <b>вторник</b>. Какой день недели будет через <b>10 дней</b>?',1,10,[3,5,1],'10 = 7 + 3: одна неделя ничего не меняет, остаётся 3 дня. Вторник + 3 дня = пятница.','Выкинь целые недели: 10 − 7 = 3. Отсчитай 3 дня от вторника.'),
+    weekLevel('Сегодня <b>суббота</b>. Какой день будет через <b>15 дней</b>?',5,15,[5,0,4],'15 = 2 · 7 + 1: остаётся 1 день. Суббота + 1 день = воскресенье.','Две полные недели не меняют день. Сколько дней остаётся?'),
+    {q:'Сегодня <b>понедельник</b>. Нажми на день недели, который будет через <b>23 дня</b>.',run(st){
+      week(st,{start:0,pick:i=>i===2?api.win('23 = 3 · 7 + 2: три недели и ещё 2 дня. Понедельник + 2 дня = среда.'):api.miss(`Ты выбрал ${DN[i]}. 23 = 3 · 7 + ?. Сколько дней останется после трёх недель?`)});
+    }},
+    {q:'Сегодня понедельник. Через сколько дней <b>снова</b> будет понедельник? Выбери все подходящие числа.',run(st){
+      multiPick(st,{opts:[7,10,14,20,21].map(v=>({label:String(v),value:v})),correct:[7,14,21],okMsg:'7, 14 и 21 делятся на 7 без остатка: остаток 0 значит «ровно целое число недель».',noMsg:sel=>`Выбрано: ${listNums(sel)}. Подходят только те числа, у которых остаток от деления на 7 равен 0.`});
+    }}
+  ]});
+function tagGame(st,nums,mod,ok){
+  const ans={},box=h('div','tags');
+  nums.forEach(n=>{
+    const row=h('div','tag',`<b>${n}</b>`);
+    for(let r=0;r<mod;r++){const b=h('button','chip small','остаток '+r);b.onclick=()=>{if(api.over)return;ans[n]=r;[...row.querySelectorAll('button')].forEach(x=>x.classList.remove('pick'));b.classList.add('pick')};row.append(b)}
+    box.append(row);
+  });
+  st.append(box);
+  checkBtn(st,()=>{const bad=nums.filter(n=>ans[n]!==n%mod);bad.length?api.miss(`Есть ошибки или пропуски, например для числа ${bad[0]}. Раздели ${bad[0]} на ${mod}: сколько останется?`):api.win(ok)});
+}
+world({id:'rem4',title:'Какие бывают остатки',sub:'Чётное, нечётное и не только',group:'frac',
+  intro:'При делении на число <b>n</b> остаток может быть только от 0 до n − 1. На 2: остаток 0 (число чётное) или 1 (нечётное). На 3: 0, 1 или 2. Остаток никогда не бывает равным делителю или больше него.',
+  levels:[
+    {q:'Какой остаток получится при делении <b>57</b> на <b>2</b>?',run(st){
+      choices(st,numOpts(1,[0,2,28],String),1,'57 = 2 · 28 + 1: число нечётное, остаток 1.',o=>`${o.value}? Остаток при делении на 2 — это 0 или 1. Число 57 чётное или нечётное?`);
+    }},
+    {q:'Для каждого числа выбери остаток от деления на <b>2</b>.',run(st){tagGame(st,[8,15,22,31,40,7],2,'Чётные (8, 22, 40) дают остаток 0, нечётные (15, 31, 7) — остаток 1.')}},
+    {q:'Какие числа дают остаток <b>1</b> при делении на <b>3</b>? Выбери все.',run(st){
+      multiPick(st,{opts:[7,9,10,12,13].map(v=>({label:String(v),value:v})),correct:[7,10,13],okMsg:'7 = 2·3 + 1, 10 = 3·3 + 1, 13 = 4·3 + 1. Числа 9 и 12 делятся на 3 без остатка.',noMsg:sel=>`Выбрано: ${listNums(sel)}. Для каждого числа найди ближайшее меньшее число, которое делится на 3, и посмотри, сколько осталось.`});
+    }},
+    {q:'Какие остатки <b>возможны</b> при делении на <b>4</b>? Выбери все.',run(st){
+      multiPick(st,{opts:[0,1,2,3,4,5].map(v=>({label:String(v),value:v})),correct:[0,1,2,3],okMsg:'Остаток при делении на 4 — это 0, 1, 2 или 3. Остаток 4 означал бы, что можно собрать ещё одну группу.',noMsg:sel=>`Выбрано: ${listNums(sel)}. Остаток всегда меньше делителя: может ли он быть 4 или 5 при делении на 4?`});
+    }}
+  ]});
+const BEAD={red:['#ff3d5a','красная'],yellow:['#ffd93d','жёлтая'],blue:['#2459f2','синяя'],green:['#12a85f','зелёная']};
+function beads(st,pattern,count){
+  const row=h('div','beads');
+  for(let i=0;i<count;i++)row.append(h('span','bead',`<i style="background:${BEAD[pattern[i%pattern.length]][0]}"></i>${i+1}`));
+  row.append(h('span','bead','<i style="border-style:dashed;background:transparent"></i>…'));st.append(row);
+}
+const beadLevel=(q,pattern,count,pos)=>({q,run(st){
+  beads(st,pattern,count);const ans=pattern[(pos-1)%pattern.length],others=Object.keys(BEAD).filter(k=>k!==ans).slice(0,3);
+  const per=pattern.length;
+  choices(st,shuffle([ans,...others]).map(k=>({label:`<span class="sw" style="background:${BEAD[k][0]}"></span>${BEAD[k][1]}`,value:k})),ans,
+    `${pos} = ${Math.floor(pos/per)} · ${per} + ${pos%per}. ${pos%per?`Остаток ${pos%per} — значит, бусина такого же цвета, как ${pos%per}-я.`:`Остаток 0 — значит, бусина такого же цвета, как последняя в узоре (${per}-я).`}`,
+    ()=>`Узор повторяется через каждые ${per} бусины. Найди остаток от деления ${pos} на ${per}: он покажет, какая это по счёту бусина узора.`);
+}});
+world({id:'rem5',title:'Бусины по кругу',sub:'Повторяющиеся узоры',group:'frac',
+  intro:'Бусины на нитке повторяются по узору. Чтобы узнать цвет сотой бусины, не нужно считать все: хватит <b>остатка от деления</b> номера на длину узора. Остаток 0 значит «последняя бусина узора».',
+  levels:[
+    beadLevel('Узор из 3 бусин повторяется: красная, жёлтая, синяя… Какого цвета <b>10-я</b> бусина?',['red','yellow','blue'],7,10),
+    beadLevel('Узор из 4 бусин повторяется. Какого цвета <b>30-я</b> бусина?',['green','blue','red','yellow'],9,30),
+    {q:'Найди остаток от деления <b>47</b> на <b>9</b>.',run(st){
+      choices(st,numOpts(2,[5,38,6],String),2,'47 = 5 · 9 + 2: девять помещается 5 раз (45), остаётся 2.',o=>`${o.value}? Сколько целых раз 9 помещается в 47, и сколько тогда остаётся?`);
+    }},
+    {q:'Найди остаток от деления <b>100</b> на <b>7</b>.',run(st){
+      choices(st,numOpts(2,[14,1,3],String),2,'100 = 14 · 7 + 2: 14 · 7 = 98, остаётся 2.',o=>`${o.value}? 7 · 14 = 98. Сколько не хватает до 100?`);
+    }}
+  ]});
+
+/* ================= иконки и цвета ================= */
+const icon=b=>`<svg class="pic" viewBox="0 0 64 64" aria-hidden="true"><g stroke="#14123d" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">${b}</g></svg>`;
+const ICONS={
+ div1:icon(`<circle cx="32" cy="10" r="2.5" fill="#14123d" stroke="none"/><path d="M24 17H40" fill="none"/><circle cx="32" cy="24" r="2.5" fill="#14123d" stroke="none"/><ellipse cx="18" cy="48" rx="15" ry="7" fill="#fff"/><ellipse cx="46" cy="48" rx="15" ry="7" fill="#fff"/><circle cx="13" cy="41" r="5.5" fill="#c98a52"/><circle cx="24" cy="42" r="5.5" fill="#c98a52"/><circle cx="41" cy="41" r="5.5" fill="#c98a52"/><circle cx="52" cy="42" r="5.5" fill="#c98a52"/>`),
+ div2:icon(`<path d="M5 48H59" fill="none"/><path d="M8 42v12M24 42v12M40 42v12M56 42v12" stroke-width="2.5"/><path d="M8 40Q16 14 24 40M24 40Q32 14 40 40M40 40Q48 14 56 40" fill="none" stroke="#ff7a00" stroke-width="3.5"/><circle cx="8" cy="48" r="5" fill="#ffd93d"/>`),
+ div3:icon(`<rect x="5" y="10" width="14" height="14" rx="3" fill="#2459f2"/><rect x="22" y="10" width="14" height="14" rx="3" fill="#2459f2"/><rect x="39" y="10" width="14" height="14" rx="3" fill="#2459f2"/><path d="M5 34H53" fill="none" stroke-width="2.5"/><rect x="5" y="42" width="14" height="14" rx="3" fill="#2459f2"/><rect x="22" y="42" width="14" height="14" rx="3" fill="#2459f2"/><rect x="39" y="42" width="14" height="14" rx="3" fill="#2459f2"/><rect x="56" y="42" width="5" height="14" rx="2" fill="#ff7a00"/>`),
+ div4:icon(`<path d="M16 28L22 16H42L48 28Z" fill="#ffd93d"/><rect x="5" y="28" width="54" height="20" rx="6" fill="#ffd93d"/><path d="M25 17L22 28M39 17L42 28" fill="none" stroke-width="2.5"/><rect x="26" y="8" width="12" height="7" rx="2" fill="#fff"/><circle cx="18" cy="48" r="7" fill="#14123d"/><circle cx="46" cy="48" r="7" fill="#14123d"/><circle cx="18" cy="48" r="2" fill="#fff" stroke="none"/><circle cx="46" cy="48" r="2" fill="#fff" stroke="none"/>`),
+ rem1:icon(`<rect x="5" y="22" width="22" height="24" rx="5" fill="#fff"/><rect x="31" y="22" width="22" height="24" rx="5" fill="#fff"/><circle cx="12" cy="30" r="3.2" fill="#ff7a00"/><circle cx="20" cy="30" r="3.2" fill="#ff7a00"/><circle cx="12" cy="38" r="3.2" fill="#ff7a00"/><circle cx="20" cy="38" r="3.2" fill="#ff7a00"/><circle cx="38" cy="30" r="3.2" fill="#ff7a00"/><circle cx="46" cy="30" r="3.2" fill="#ff7a00"/><circle cx="38" cy="38" r="3.2" fill="#ff7a00"/><circle cx="46" cy="38" r="3.2" fill="#ff7a00"/><circle cx="31" cy="55" r="5" fill="#ff7a00"/><circle cx="44" cy="55" r="5" fill="#ff7a00"/>`),
+ rem2:icon(`<circle cx="32" cy="34" r="22" fill="#fff"/><path d="M32 16V20M32 48V52M14 34H18M46 34H50" fill="none" stroke-width="2.5"/><path d="M32 34L44 34" stroke="#ff7a00" stroke-width="4.5" fill="none"/><path d="M32 34V22" stroke-width="3.5" fill="none"/><circle cx="32" cy="34" r="2.5" fill="#14123d"/><path d="M12 12A28 28 0 0 1 36 4M30 0l6 4-6 6" fill="none" stroke-width="3" transform="translate(2 0)"/>`),
+ rem3:icon(`<rect x="8" y="12" width="48" height="44" rx="6" fill="#fff"/><path d="M8 18a6 6 0 0 1 6-6H50a6 6 0 0 1 6 6V26H8Z" fill="#ff3d5a"/><path d="M20 6V16M44 6V16" stroke-width="4"/><rect x="14" y="32" width="7" height="7" rx="1.5" fill="#d3e1ff"/><rect x="25" y="32" width="7" height="7" rx="1.5" fill="#d3e1ff"/><rect x="36" y="32" width="7" height="7" rx="1.5" fill="#d3e1ff"/><rect x="47" y="32" width="5" height="7" rx="1.5" fill="#ff7a00"/><rect x="14" y="43" width="7" height="7" rx="1.5" fill="#d3e1ff"/><rect x="25" y="43" width="7" height="7" rx="1.5" fill="#d3e1ff"/>`),
+ rem4:icon(`<rect x="5" y="14" width="25" height="36" rx="7" fill="#fff"/><rect x="34" y="14" width="25" height="36" rx="7" fill="#ffd93d"/><ellipse cx="17.5" cy="32" rx="5.5" ry="9" fill="none" stroke-width="3.5"/><path d="M47 22V42M43 26L47 22" fill="none" stroke-width="3.5"/>`),
+ rem5:icon(`<circle cx="32" cy="32" r="21" fill="none" stroke-width="2.5"/><circle cx="53" cy="32" r="7" fill="#ff3d5a"/><circle cx="46.8" cy="46.8" r="7" fill="#ffd93d"/><circle cx="32" cy="53" r="7" fill="#2459f2"/><circle cx="17.2" cy="46.8" r="7" fill="#ff3d5a"/><circle cx="11" cy="32" r="7" fill="#ffd93d"/><circle cx="17.2" cy="17.2" r="7" fill="#2459f2"/><circle cx="32" cy="11" r="7" fill="#ff3d5a"/><circle cx="46.8" cy="17.2" r="7" fill="#ffd93d"/>`)
+};
+const COLORS={div1:'#ffd93d',div2:'#70d4ff',div3:'#ff82b6',div4:'#c5ee4e',rem1:'#ffa133',rem2:'#b99dff',rem3:'#55e3b8',rem4:'#ff6b4f',rem5:'#e977ff'};
+const STAR='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3 6.1 20.6l1.3-6.6L2.5 9.4l6.6-.8z"/></svg>';
+const starsHtml=n=>[1,2,3].map(i=>`<i class="st${i<=n?' on':''}">${STAR}</i>`).join('');
+
+/* ================= главная ================= */
+function renderHome(){
+  const gn=$('#gridNeg'),gf=$('#gridFrac');gn.innerHTML='';gf.innerHTML='';
+  let got=0,max=0;
+  WORLDS.forEach(w=>{
+    const st=save[w.id]||[],g=st.reduce((a,b)=>a+(b||0),0),m=w.levels.length*3;got+=g;max+=m;
+    const pips=w.levels.map((_,i)=>`<i class="pip${st[i]?' on':''}"></i>`).join('');
+    const c=h('button','tile',`${ICONS[w.id]}<b>${w.title}</b><small>${w.sub}</small><span class="prog">${pips}<span class="sc">${g}/${m}</span></span>`);
+    c.style.setProperty('--c',COLORS[w.id]);
+    c.onclick=()=>openWorld(w);(w.group==='neg'?gn:gf).append(c);
+  });
+  $('#totalStars').innerHTML=`${STAR}<span>${got} из ${max}</span>`;
+}
+function goHome(){renderHome();show('home')}
+let rs=false;
+$('#reset').onclick=function(){
+  if(!rs){rs=true;this.textContent='Точно сбросить? Нажми ещё раз';setTimeout(()=>{rs=false;this.textContent='Сбросить прогресс'},3000);return}
+  save={};persist();rs=false;this.textContent='Сбросить прогресс';renderHome();
+};
+renderHome();show('home');
+</script>
+</body>
+</html>
